@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jul 24 14:02:24 2024
+Created on Wed Jul 24 12:57:49 2024
 
 @author: jaanajurvansuu
 """
@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split, StratifiedKFold, permutation_test_score, cross_val_score
 from sklearn.naive_bayes import GaussianNB
-from sklearn.dummy import DummyClassifier
 from sklearn.metrics import accuracy_score, classification_report
 from imblearn.over_sampling import SMOTE
 from sklearn.preprocessing import LabelEncoder
@@ -19,6 +18,7 @@ from statsmodels.stats.proportion import proportion_confint
 
 # Set a global random seed
 np.random.seed(42)
+
 # Load data
 df = pd.read_csv('CodeEffsDataframe.csv')
 
@@ -74,85 +74,115 @@ X_train_resampled = X_train_resampled.to_numpy()
 y_train_resampled = np.array(y_train_resampled)
 X_test = X_test.to_numpy()  # Convert X_test to numpy array
 
-# Train GaussianNB model and calculate default accuracy
+# Train GaussianNB model and calculate default accuracy on resampled data
 model = GaussianNB()
 model.fit(X_train_resampled, y_train_resampled)
-y_pred = model.predict(X_test)
-default_accuracy = accuracy_score(y_test, y_pred)
-print(f"Default Accuracy: {default_accuracy}")
+y_pred_resampled = model.predict(X_test)
+default_accuracy_resampled = accuracy_score(y_test, y_pred_resampled)
+print(f"Default Accuracy on Resampled Data: {default_accuracy_resampled}")
 
-# Confidence interval for default accuracy
-n_correct_default = default_accuracy * n_samples_test
-ci_default = proportion_confint(count=n_correct_default, nobs=n_samples_test, alpha=0.05, method='normal')
-print(f"95% confidence interval for default accuracy: {ci_default}")
+# Confidence interval for default accuracy on resampled data
+n_correct_default_resampled = default_accuracy_resampled * n_samples_test
+ci_default_resampled = proportion_confint(count=n_correct_default_resampled, nobs=n_samples_test, alpha=0.05, method='normal')
+print(f"95% confidence interval for default accuracy on resampled data: {ci_default_resampled}")
 
-# Cross-validation
+# Train GaussianNB model and calculate default accuracy on original data
+model_original = GaussianNB()
+model_original.fit(X_train, y_train)
+y_pred_original = model_original.predict(X_test)
+default_accuracy_original = accuracy_score(y_test, y_pred_original)
+print(f"Default Accuracy on Original Data: {default_accuracy_original}")
+
+# Confidence interval for default accuracy on original data
+n_correct_default_original = default_accuracy_original * n_samples_test
+ci_default_original = proportion_confint(count=n_correct_default_original, nobs=n_samples_test, alpha=0.05, method='normal')
+print(f"95% confidence interval for default accuracy on original data: {ci_default_original}")
+
+# Cross-validation on resampled data
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-cv_scores = cross_val_score(model, X_train_resampled, y_train_resampled, cv=cv, scoring='accuracy')
+cv_scores_resampled = cross_val_score(model, X_train_resampled, y_train_resampled, cv=cv, scoring='accuracy')
 
-# Calculate mean and standard deviation of CV accuracy per fold
-mean_cv_accuracy_per_fold = cv_scores.mean(axis=0)
-std_cv_accuracy_per_fold = cv_scores.std(axis=0)
+# Calculate mean and standard deviation of CV accuracy per fold for resampled data
+mean_cv_accuracy_per_fold_resampled = cv_scores_resampled.mean(axis=0)
+std_cv_accuracy_per_fold_resampled = cv_scores_resampled.std(axis=0)
 
-# Print CV results
-print("Mean CV Accuracy per Fold:", cv_scores)
-print("Standard Deviation of CV Accuracy per Fold:", np.zeros(len(cv_scores)))  # The standard deviation per fold is 0 for individual folds
-print("Overall Mean CV Accuracy:", mean_cv_accuracy_per_fold)
-print("Overall Std Deviation of CV Accuracy:", std_cv_accuracy_per_fold)
+# Print CV results for resampled data
+print("Mean CV Accuracy per Fold on Resampled Data:", cv_scores_resampled)
+print("Standard Deviation of CV Accuracy per Fold on Resampled Data:", np.zeros(len(cv_scores_resampled)))  # The standard deviation per fold is 0 for individual folds
+print("Overall Mean CV Accuracy on Resampled Data:", mean_cv_accuracy_per_fold_resampled)
+print("Overall Std Deviation of CV Accuracy on Resampled Data:", std_cv_accuracy_per_fold_resampled)
 
-# Confidence interval for mean CV accuracy
-n_correct_cv = mean_cv_accuracy_per_fold * n_samples_test
-ci_cv = proportion_confint(count=n_correct_cv, nobs=n_samples_test, alpha=0.05, method='normal')
-print(f"95% confidence interval for mean CV accuracy: {ci_cv}")
+# Confidence interval for mean CV accuracy on resampled data
+n_correct_cv_resampled = mean_cv_accuracy_per_fold_resampled * n_samples_test
+ci_cv_resampled = proportion_confint(count=n_correct_cv_resampled, nobs=n_samples_test, alpha=0.05, method='normal')
+print(f"95% confidence interval for mean CV accuracy on resampled data: {ci_cv_resampled}")
 
-# Bootstrap cross-validation
+# Cross-validation on original data
+cv_scores_original = cross_val_score(model_original, X_train, y_train, cv=cv, scoring='accuracy')
+
+# Calculate mean and standard deviation of CV accuracy per fold for original data
+mean_cv_accuracy_per_fold_original = cv_scores_original.mean(axis=0)
+std_cv_accuracy_per_fold_original = cv_scores_original.std(axis=0)
+
+# Print CV results for original data
+print("Mean CV Accuracy per Fold on Original Data:", cv_scores_original)
+print("Standard Deviation of CV Accuracy per Fold on Original Data:", np.zeros(len(cv_scores_original)))  # The standard deviation per fold is 0 for individual folds
+print("Overall Mean CV Accuracy on Original Data:", mean_cv_accuracy_per_fold_original)
+print("Overall Std Deviation of CV Accuracy on Original Data:", std_cv_accuracy_per_fold_original)
+
+# Confidence interval for mean CV accuracy on original data
+n_correct_cv_original = mean_cv_accuracy_per_fold_original * n_samples_test
+ci_cv_original = proportion_confint(count=n_correct_cv_original, nobs=n_samples_test, alpha=0.05, method='normal')
+print(f"95% confidence interval for mean CV accuracy on original data: {ci_cv_original}")
+
+# Bootstrap cross-validation on resampled data
 n_iterations = 1000
 n_size = int(len(X_train_resampled) * 0.8)
-accuracy_scores = []
+accuracy_scores_resampled = []
 
 for i in range(n_iterations):
     indices = np.random.choice(len(X_train_resampled), n_size, replace=True)
     X_bootstrap, y_bootstrap = X_train_resampled[indices], y_train_resampled[indices]
     model.fit(X_bootstrap, y_bootstrap)
-    y_pred = model.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
-    accuracy_scores.append(accuracy)
+    y_pred_bootstrap = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred_bootstrap)
+    accuracy_scores_resampled.append(accuracy)
 
-# Calculate mean and standard deviation of accuracy scores
-mean_accuracy = np.mean(accuracy_scores)
-std_accuracy = np.std(accuracy_scores)
+# Calculate mean and standard deviation of accuracy scores for resampled data
+mean_accuracy_resampled = np.mean(accuracy_scores_resampled)
+std_accuracy_resampled = np.std(accuracy_scores_resampled)
 
-print(f"Bootstrap Accuracy: Mean = {mean_accuracy:.4f}, Std = {std_accuracy:.4f}")
+print(f"Bootstrap Accuracy on Resampled Data: Mean = {mean_accuracy_resampled:.4f}, Std = {std_accuracy_resampled:.4f}")
 
-# Permutation test
-score, permutation_scores, p_value = permutation_test_score(
+# Permutation test on resampled data
+score_resampled, permutation_scores_resampled, p_value_resampled = permutation_test_score(
     model, X_train_resampled, y_train_resampled, cv=StratifiedKFold(5), n_permutations=1000, scoring='accuracy', n_jobs=-1
 )
 
-print(f"Permutation test score: {score:.4f}, p-value: {p_value:.4f}")
+print(f"Permutation test score on resampled data: {score_resampled:.4f}, p-value: {p_value_resampled:.4f}")
 
-# Calculate mean and standard deviation of permutation scores
-mean_permutation_scores = np.mean(permutation_scores)
-std_permutation_scores = np.std(permutation_scores)
+# Calculate mean and standard deviation of permutation scores for resampled data
+mean_permutation_scores_resampled = np.mean(permutation_scores_resampled)
+std_permutation_scores_resampled = np.std(permutation_scores_resampled)
 
-print("Mean Permutation Accuracy:", mean_permutation_scores)
-print("Standard Deviation of Permutation Accuracy:", std_permutation_scores)
-print("Overall Mean Permutation Accuracy:", mean_permutation_scores)
-print("Overall Std Deviation of Permutation Accuracy:", std_permutation_scores)
+print("Mean Permutation Accuracy on Resampled Data:", mean_permutation_scores_resampled)
+print("Standard Deviation of Permutation Accuracy on Resampled Data:", std_permutation_scores_resampled)
+print("Overall Mean Permutation Accuracy on Resampled Data:", mean_permutation_scores_resampled)
+print("Overall Std Deviation of Permutation Accuracy on Resampled Data:", std_permutation_scores_resampled)
 
-# Plot bootstrap results
+# Plot bootstrap results for resampled data
 plt.figure(figsize=(14, 6))
 
 plt.subplot(1, 2, 1)
-sns.histplot(accuracy_scores, kde=True)
+sns.histplot(accuracy_scores_resampled, kde=False)
 plt.title('Bootstrap Accuracy Scores')
 plt.xlabel('Accuracy')
 plt.ylabel('Frequency')
 
-# Plot permutation results
+# Plot permutation results for resampled data
 plt.subplot(1, 2, 2)
-sns.histplot(permutation_scores, kde=True)
-plt.axvline(score, color='r', linestyle='--')
+sns.histplot(permutation_scores_resampled, kde=False)
+plt.axvline(score_resampled, color='r', linestyle='--')
 plt.title('Permutation Accuracy Scores')
 plt.xlabel('Accuracy')
 plt.ylabel('Frequency')
@@ -160,21 +190,14 @@ plt.ylabel('Frequency')
 plt.tight_layout()
 plt.show()
 
-# Generate a classification report for GaussianNB
-print("\nGaussianNB Classification Report:")
-class_report = classification_report(y_test, y_pred, target_names=label_encoder.classes_, output_dict=True)
-class_report_df = pd.DataFrame(class_report).transpose()
-print(class_report_df)
+# Generate a classification report for GaussianNB on resampled data
+print("\nGaussianNB Classification Report on Resampled Data:")
+class_report_resampled = classification_report(y_test, y_pred_resampled, target_names=label_encoder.classes_, output_dict=True)
+class_report_df_resampled = pd.DataFrame(class_report_resampled).transpose()
+print(class_report_df_resampled)
 
-# Train and evaluate a baseline model (DummyClassifier)
-baseline_model = DummyClassifier(strategy="most_frequent")
-baseline_model.fit(X_train_resampled, y_train_resampled)
-baseline_y_pred = baseline_model.predict(X_test)
-baseline_accuracy = accuracy_score(y_test, baseline_y_pred)
-print(f"\nBaseline Accuracy: {baseline_accuracy}")
-
-# Generate a classification report for the baseline model
-print("\nBaseline Model Classification Report:")
-baseline_class_report = classification_report(y_test, baseline_y_pred, target_names=label_encoder.classes_, output_dict=True)
-baseline_class_report_df = pd.DataFrame(baseline_class_report).transpose()
-print(baseline_class_report_df)
+# Generate a classification report for GaussianNB on original data
+print("\nGaussianNB Classification Report on Original Data:")
+class_report_original = classification_report(y_test, y_pred_original, target_names=label_encoder.classes_, output_dict=True)
+class_report_df_original = pd.DataFrame(class_report_original).transpose()
+print(class_report_df_original)
